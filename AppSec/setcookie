@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import sys
+import hashlib
+
+if len(sys.argv) < 2:
+	print ("Usage: %s <netid>" % sys.argv[0], file=sys.stderr)
+	sys.exit(1)
+
+with open("cookie", "w") as f:
+	print(int(hashlib.sha1(('|'.join(sorted(sys.argv[1:]))).encode('latin-1')).hexdigest(),16) % 0x8FFF, file=f)
+
+
